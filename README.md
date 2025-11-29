@@ -2,6 +2,10 @@
 
 Um jogo da memória divertido e viciante, feito com HTML, CSS e JavaScript puro. Basta abrir no navegador e jogar!
 
+## 🕹️ Jogar Agora
+
+**[Clique aqui para jogar!](https://dliedke.github.io/Memoria/memoria.html)**
+
 ## 🎮 Demo
 
 Abra o arquivo `memoria.html` diretamente no seu navegador para jogar.
@@ -102,3 +106,5 @@ MIT License - Sinta-se livre para usar, modificar e distribuir!
 ---
 
 Feito com ❤️ e muitos emojis
+
+🤖 Criado com [Claude Opus 4.5](https://www.anthropic.com/claude) da Anthropic
