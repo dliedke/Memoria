@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 Jogo da Memória Ultimate</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+      animation: titlePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border-radius: 50px;
+      color: #fff;
+      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .hint-btn {
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      transition: all 0.3s;
+    }
+
+    .hint-btn:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 5px 20px rgba(240, 147, 251, 0.5);
+    }
+
+    .hint-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .hint-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .stat-value {
+      color: #ffd93d;
+      font-size: 1.2rem;
+    }
+
+    .combo-display {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 4rem;
+      font-weight: bold;
+      color: #ffd93d;
+      text-shadow: 0 0 30px rgba(255, 217, 61, 0.8);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 100;
+    }
+
+    .combo-display.show {
+      animation: comboPopup 0.8s ease-out forwards;
+    }
+
+    @keyframes comboPopup {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1) translateY(-50px); }
+    }
+
+    .difficulty-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .diff-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+      text-transform: uppercase;
+    }
+
+    .diff-btn.easy {
+      background: linear-gradient(135deg, #56ab2f, #a8e063);
+      color: #fff;
+    }
+
+    .diff-btn.medium {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      color: #fff;
+    }
+
+    .diff-btn.hard {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: #fff;
+    }
+
+    .diff-btn.extreme {
+      background: linear-gradient(135deg, #8e2de2, #4a00e0);
+      color: #fff;
+    }
+
+    .diff-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .diff-btn.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+    }
+
+    .board {
+      display: grid;
+      gap: 10px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .card {
+      aspect-ratio: 1;
+      border-radius: 15px;
+      cursor: pointer;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      animation: matchPulse 0.5s ease-out;
+    }
+
+    @keyframes matchPulse {
+      0% { transform: rotateY(180deg) scale(1); }
+      50% { transform: rotateY(180deg) scale(1.15); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+
+    .card.matched::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 20px;
+      background: linear-gradient(45deg, #00ff88, #00d4ff, #ff00ff, #ff6b6b);
+      background-size: 400% 400%;
+      animation: rainbowBorder 2s linear infinite;
+      z-index: -1;
+      opacity: 0.7;
+    }
+
+    @keyframes rainbowBorder {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+    }
+
+    .card-front {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-size: 2rem;
+      color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3),
+                  inset 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+
+    .card-front::before {
+      content: '?';
+      font-weight: bold;
+      animation: questionPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes questionPulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+
+    .card-back {
+      background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+      transform: rotateY(180deg);
+      font-size: 2.5rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .card:not(.flipped):not(.matched):hover .card-front {
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5),
+                  inset 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+
+    .card:not(.flipped):not(.matched):hover {
+      transform: translateY(-5px);
+    }
+
+    .btn {
+      padding: 15px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 40px;
+      border-radius: 30px;
+      text-align: center;
+      transform: scale(0.8);
+      transition: transform 0.3s;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      max-width: 90%;
+    }
+
+    .modal.show .modal-content {
+      transform: scale(1);
+      animation: modalBounce 0.5s ease-out;
+    }
+
+    @keyframes modalBounce {
+      0% { transform: scale(0.5); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .modal h2 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    .modal p {
+      color: #aaa;
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+    }
+
+    .stars {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .star {
+      display: inline-block;
+      opacity: 0.3;
+      transition: all 0.3s;
+    }
+
+    .star.earned {
+      opacity: 1;
+      animation: starEarned 0.5s ease-out;
+    }
+
+    @keyframes starEarned {
+      0% { transform: scale(0) rotate(-180deg); }
+      50% { transform: scale(1.3) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .final-stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    .final-stat {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px 25px;
+      border-radius: 15px;
+    }
+
+    .final-stat-label {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .final-stat-value {
+      color: #ffd93d;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    /* Particles */
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      animation: particleFall linear forwards;
+    }
+
+    @keyframes particleFall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(720deg);
+      }
+    }
+
+    /* Screen shake */
+    .shake {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* Floating emojis background */
+    .floating-emoji {
+      position: fixed;
+      font-size: 2rem;
+      opacity: 0.1;
+      pointer-events: none;
+      animation: float linear infinite;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+      }
+      100% {
+        transform: translateY(-100px) rotate(360deg);
+      }
+    }
+
+    .score-popup {
+      position: fixed;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #00ff88;
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+      pointer-events: none;
+      animation: scorePopup 1s ease-out forwards;
+      z-index: 100;
+    }
+
+    @keyframes scorePopup {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(1.5);
+      }
+    }
+
+    .high-score {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .new-record {
+      animation: newRecord 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes newRecord {
+      0% { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+      100% { color: #ffd93d; text-shadow: 0 0 20px rgba(255, 217, 61, 0.8); }
+    }
+
+    .perfect-bonus {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 150;
+    }
+
+    .perfect-bonus.show {
+      animation: perfectBonus 1.5s ease-out forwards;
+    }
+
+    @keyframes perfectBonus {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1) translateY(-30px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container" id="gameContainer">
+    <h1>🧠 Memória Ultimate</h1>
+    
+    <div class="difficulty-selector">
+      <button class="diff-btn easy active" data-level="easy">🌱 Fácil</button>
+      <button class="diff-btn medium" data-level="medium">🔥 Médio</button>
+      <button class="diff-btn hard" data-level="hard">💀 Difícil</button>
+      <button class="diff-btn extreme" data-level="extreme">☠️ Extremo</button>
+    </div>
+    
+    <div class="stats-bar">
+      <div class="stat">
+        <span>⏱️</span>
+        <span class="stat-value" id="timer">0:00</span>
+      </div>
+      <div class="stat">
+        <span>🎯</span>
+        <span class="stat-value" id="moves">0</span>
+      </div>
+      <div class="stat">
+        <span>🔥</span>
+        <span class="stat-value" id="combo">0x</span>
+      </div>
+      <div class="stat">
+        <span>💎</span>
+        <span class="stat-value" id="score">0</span>
+      </div>
+      <button class="stat hint-btn" id="hintBtn" title="Usar dica">
+        <span>🔑</span>
+        <span class="stat-value" id="hints">3</span>
+      </button>
+    </div>
+    
+    <div class="board" id="board"></div>
+    
+    <button class="btn btn-primary" id="restartBtn">🔄 Reiniciar</button>
+    
+    <div class="high-score" id="highScore"></div>
+  </div>
+
+  <div class="combo-display" id="comboDisplay"></div>
+  <div class="perfect-bonus" id="perfectBonus"></div>
+
+  <div class="modal" id="winModal">
+    <div class="modal-content">
+      <h2 style="color: #fff;">🎉 Vitória!</h2>
+      <div class="stars" id="stars">
+        <span class="star">⭐</span>
+        <span class="star">⭐</span>
+        <span class="star">⭐</span>
+      </div>
+      <div class="final-stats">
+        <div class="final-stat">
+          <div class="final-stat-label">Tempo</div>
+          <div class="final-stat-value" id="finalTime">0:00</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Jogadas</div>
+          <div class="final-stat-value" id="finalMoves">0</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Pontuação</div>
+          <div class="final-stat-value" id="finalScore">0</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Melhor Combo</div>
+          <div class="final-stat-value" id="finalCombo">0x</div>
+        </div>
+      </div>
+      <p id="newRecordText" style="display: none; color: #ffd93d; font-size: 1.3rem; margin-bottom: 15px;">🏆 NOVO RECORDE! 🏆</p>
+      <button class="btn btn-primary" id="playAgainBtn">🚀 Jogar Novamente</button>
+    </div>
+  </div>
+
+  <script>
+    // Emojis por dificuldade
+    const emojiSets = {
+      easy: ['❤️', '✨', '✅', '😂', '⭐', '🌼'],
+      medium: ['❤️', '✨', '✅', '😂', '⭐', '🌼', '🎮', '🎵', '🌈', '🍕'],
+      hard: ['❤️', '✨', '✅', '😂', '⭐', '🌼', '🎮', '🎵', '🌈', '🍕', '🚀', '🎯', '💎', '🔥', '🌙', '🎪'],
+      extreme: ['❤️', '✨', '✅', '😂', '⭐', '🌼', '🎮', '🎵', '🌈', '🍕', '🚀', '🎯', '💎', '🔥', '🌙', '🎪', '🦋', '🌺', '🎭', '🏆']
+    };
+
+    const gridSizes = {
+      easy: { cols: 3, rows: 4 },
+      medium: { cols: 4, rows: 5 },
+      hard: { cols: 4, rows: 8 },
+      extreme: { cols: 5, rows: 8 }
+    };
+
+    // Game state
+    let cards = [];
+    let flippedCards = [];
+    let matchedPairs = 0;
+    let totalPairs = 0;
+    let moves = 0;
+    let score = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let isLocked = false;
+    let timerInterval = null;
+    let seconds = 0;
+    let currentLevel = 'easy';
+    let gameStarted = false;
+    let hints = 3;
+
+    // DOM elements
+    const board = document.getElementById('board');
+    const timerEl = document.getElementById('timer');
+    const movesEl = document.getElementById('moves');
+    const comboEl = document.getElementById('combo');
+    const scoreEl = document.getElementById('score');
+    const comboDisplay = document.getElementById('comboDisplay');
+    const winModal = document.getElementById('winModal');
+    const gameContainer = document.getElementById('gameContainer');
+    const highScoreEl = document.getElementById('highScore');
+    const perfectBonus = document.getElementById('perfectBonus');
+    const hintBtn = document.getElementById('hintBtn');
+    const hintsEl = document.getElementById('hints');
+
+    // Audio context for sounds
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      switch(type) {
+        case 'flip':
+          oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.1);
+          break;
+        case 'match':
+          oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+          oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+          oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.3);
+          break;
+        case 'nomatch':
+          oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.2);
+          break;
+        case 'combo':
+          const baseFreq = 400 + (combo * 50);
+          oscillator.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioCtx.currentTime + 0.15);
+          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.2);
+          break;
+        case 'win':
+          const notes = [523, 659, 784, 1047];
+          notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.15);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.3);
+            osc.start(audioCtx.currentTime + i * 0.15);
+            osc.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+          });
+          break;
+      }
+    }
+
+    function shuffle(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
+    function createBoard() {
+      const emojis = emojiSets[currentLevel];
+      const grid = gridSizes[currentLevel];
+      totalPairs = (grid.cols * grid.rows) / 2;
+      
+      const selectedEmojis = emojis.slice(0, totalPairs);
+      const pairs = [...selectedEmojis, ...selectedEmojis];
+      cards = shuffle(pairs).map((emoji, index) => ({
+        id: index,
+        emoji,
+        isFlipped: false,
+        isMatched: false
+      }));
+
+      board.style.gridTemplateColumns = `repeat(${grid.cols}, 1fr)`;
+      board.innerHTML = '';
+      
+      const cardSize = currentLevel === 'extreme' ? '55px' : 
+                       currentLevel === 'hard' ? '60px' : '70px';
+
+      cards.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.dataset.index = index;
+        cardEl.style.width = cardSize;
+        cardEl.style.height = cardSize;
+        cardEl.innerHTML = `
+          <div class="card-face card-front"></div>
+          <div class="card-face card-back">${card.emoji}</div>
+        `;
+        cardEl.addEventListener('click', () => handleCardClick(index));
+        board.appendChild(cardEl);
+      });
+    }
+
+    function handleCardClick(index) {
+      initAudio();
+      
+      if (isLocked || cards[index].isFlipped || cards[index].isMatched) return;
+      if (flippedCards.length >= 2) return;
+
+      if (!gameStarted) {
+        gameStarted = true;
+        startTimer();
+      }
+
+      cards[index].isFlipped = true;
+      flippedCards.push(index);
+      
+      const cardEl = board.children[index];
+      cardEl.classList.add('flipped');
+      playSound('flip');
+
+      if (flippedCards.length === 2) {
+        moves++;
+        movesEl.textContent = moves;
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      const [first, second] = flippedCards;
+      
+      if (cards[first].emoji === cards[second].emoji) {
+        cards[first].isMatched = true;
+        cards[second].isMatched = true;
+        matchedPairs++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        
+        const cardEl1 = board.children[first];
+        const cardEl2 = board.children[second];
+        cardEl1.classList.add('matched');
+        cardEl2.classList.add('matched');
+        
+        // Score calculation
+        const basePoints = 100;
+        const comboBonus = combo * 50;
+        const timeBonus = Math.max(0, 50 - seconds);
+        const points = basePoints + comboBonus + timeBonus;
+        score += points;
+        scoreEl.textContent = score;
+        
+        // Show score popup
+        showScorePopup(cardEl2, `+${points}`);
+        
+        playSound('match');
+        if (combo >= 2) {
+          playSound('combo');
+          showCombo();
+        }
+        
+        createMatchParticles(cardEl1);
+        createMatchParticles(cardEl2);
+        
+        comboEl.textContent = combo + 'x';
+        
+        flippedCards = [];
+        
+        if (matchedPairs === totalPairs) {
+          setTimeout(winGame, 500);
+        }
+      } else {
+        isLocked = true;
+        combo = 0;
+        comboEl.textContent = '0x';
+        
+        playSound('nomatch');
+        gameContainer.classList.add('shake');
+        setTimeout(() => gameContainer.classList.remove('shake'), 300);
+        
+        setTimeout(() => {
+          cards[first].isFlipped = false;
+          cards[second].isFlipped = false;
+          board.children[first].classList.remove('flipped');
+          board.children[second].classList.remove('flipped');
+          flippedCards = [];
+          isLocked = false;
+        }, 1000);
+      }
+    }
+
+    function showScorePopup(element, text) {
+      const rect = element.getBoundingClientRect();
+      const popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.textContent = text;
+      popup.style.left = rect.left + rect.width / 2 + 'px';
+      popup.style.top = rect.top + 'px';
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 1000);
+    }
+
+    function showCombo() {
+      const messages = ['COMBO!', 'INCRÍVEL!', 'FANTÁSTICO!', 'LENDÁRIO!', 'DIVINO!'];
+      const index = Math.min(combo - 2, messages.length - 1);
+      comboDisplay.textContent = `${combo}x ${messages[index]}`;
+      comboDisplay.classList.add('show');
+      setTimeout(() => comboDisplay.classList.remove('show'), 800);
+    }
+
+    function createMatchParticles(element) {
+      const rect = element.getBoundingClientRect();
+      const emojis = ['✨', '⭐', '💫', '🌟', '💥', '🎉'];
+      
+      for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        particle.style.left = rect.left + rect.width / 2 + 'px';
+        particle.style.top = rect.top + rect.height / 2 + 'px';
+        particle.style.fontSize = (Math.random() * 20 + 15) + 'px';
+        particle.style.animationDuration = (Math.random() * 1 + 1) + 's';
+        particle.style.transform = `translateX(${(Math.random() - 0.5) * 200}px)`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
+      }
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        seconds++;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    function winGame() {
+      stopTimer();
+      playSound('win');
+      
+      // Perfect game bonus
+      const perfectMoves = totalPairs;
+      if (moves === perfectMoves) {
+        score += 500;
+        scoreEl.textContent = score;
+        perfectBonus.innerHTML = '🎯 PERFEITO! 🎯<br>+500 BÔNUS!';
+        perfectBonus.classList.add('show');
+        setTimeout(() => perfectBonus.classList.remove('show'), 1500);
+      }
+      
+      // Calculate stars - baseado em jogadas extras além do perfeito
+      const extraMoves = moves - totalPairs;
+      let stars = 1;
+      if (extraMoves <= Math.ceil(totalPairs * 0.7)) stars = 3;  // até 70% de jogadas extras = 3 estrelas
+      else if (extraMoves <= Math.ceil(totalPairs * 1.5)) stars = 2;  // até 150% = 2 estrelas
+      
+      // Update modal
+      document.getElementById('finalTime').textContent = timerEl.textContent;
+      document.getElementById('finalMoves').textContent = moves;
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('finalCombo').textContent = maxCombo + 'x';
+      
+      const starsContainer = document.getElementById('stars');
+      const starEls = starsContainer.querySelectorAll('.star');
+      starEls.forEach((star, i) => {
+        star.classList.remove('earned');
+        if (i < stars) {
+          setTimeout(() => star.classList.add('earned'), i * 300);
+        }
+      });
+      
+      // Check high score
+      const highScoreKey = `highScore_${currentLevel}`;
+      const currentHighScore = localStorage.getItem(highScoreKey) || 0;
+      const newRecordText = document.getElementById('newRecordText');
+      
+      if (score > currentHighScore) {
+        localStorage.setItem(highScoreKey, score);
+        newRecordText.style.display = 'block';
+        createConfetti();
+      } else {
+        newRecordText.style.display = 'none';
+      }
+      
+      updateHighScoreDisplay();
+      
+      setTimeout(() => {
+        winModal.classList.add('show');
+        createConfetti();
+      }, 500);
+    }
+
+    function createConfetti() {
+      const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bd6'];
+      const emojis = ['🎉', '🎊', '✨', '⭐', '💫', '🌟', '🏆', '💎'];
+      
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          particle.style.left = Math.random() * window.innerWidth + 'px';
+          particle.style.top = '-50px';
+          particle.style.fontSize = (Math.random() * 25 + 15) + 'px';
+          particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 4000);
+        }, i * 50);
+      }
+    }
+
+    function resetGame() {
+      stopTimer();
+      flippedCards = [];
+      matchedPairs = 0;
+      moves = 0;
+      score = 0;
+      combo = 0;
+      maxCombo = 0;
+      seconds = 0;
+      isLocked = false;
+      gameStarted = false;
+      
+      timerEl.textContent = '0:00';
+      movesEl.textContent = '0';
+      comboEl.textContent = '0x';
+      scoreEl.textContent = '0';
+      hints = 3;
+      hintsEl.textContent = '3';
+      hintBtn.disabled = false;
+      
+      winModal.classList.remove('show');
+      createBoard();
+      updateHighScoreDisplay();
+    }
+
+    function updateHighScoreDisplay() {
+      const highScoreKey = `highScore_${currentLevel}`;
+      const highScore = localStorage.getItem(highScoreKey) || 0;
+      highScoreEl.textContent = highScore > 0 ? `🏆 Recorde: ${highScore}` : '';
+    }
+
+    function useHint() {
+      if (hints <= 0 || isLocked) return;
+      
+      // Encontrar um par não descoberto
+      const unmatchedCards = cards.filter(c => !c.isMatched && !c.isFlipped);
+      if (unmatchedCards.length < 2) return;
+      
+      // Encontrar duas cartas com o mesmo emoji
+      let pair = null;
+      for (let i = 0; i < unmatchedCards.length; i++) {
+        for (let j = i + 1; j < unmatchedCards.length; j++) {
+          if (unmatchedCards[i].emoji === unmatchedCards[j].emoji) {
+            pair = [unmatchedCards[i], unmatchedCards[j]];
+            break;
+          }
+        }
+        if (pair) break;
+      }
+      
+      if (!pair) return;
+      
+      hints--;
+      hintsEl.textContent = hints;
+      if (hints === 0) {
+        hintBtn.disabled = true;
+      }
+      
+      // Revelar as cartas temporariamente
+      isLocked = true;
+      const card1El = board.children[pair[0].id];
+      const card2El = board.children[pair[1].id];
+      
+      card1El.classList.add('flipped');
+      card2El.classList.add('flipped');
+      
+      // Efeito visual de dica
+      card1El.style.boxShadow = '0 0 20px #f093fb, 0 0 40px #f5576c';
+      card2El.style.boxShadow = '0 0 20px #f093fb, 0 0 40px #f5576c';
+      
+      playSound('match');
+      
+      setTimeout(() => {
+        card1El.classList.remove('flipped');
+        card2El.classList.remove('flipped');
+        card1El.style.boxShadow = '';
+        card2El.style.boxShadow = '';
+        isLocked = false;
+      }, 1200);
+    }
+
+    function createFloatingEmojis() {
+      const emojis = ['❤️', '✨', '⭐', '🌼', '💫', '🌟'];
+      
+      for (let i = 0; i < 10; i++) {
+        const emoji = document.createElement('div');
+        emoji.className = 'floating-emoji';
+        emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        emoji.style.left = Math.random() * 100 + 'vw';
+        emoji.style.animationDuration = (Math.random() * 10 + 15) + 's';
+        emoji.style.animationDelay = (Math.random() * 10) + 's';
+        document.body.appendChild(emoji);
+      }
+    }
+
+    // Event listeners
+    document.getElementById('restartBtn').addEventListener('click', resetGame);
+    document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+    hintBtn.addEventListener('click', useHint);
+
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLevel = btn.dataset.level;
+        resetGame();
+      });
+    });
+
+    // Initialize
+    createBoard();
+    createFloatingEmojis();
+    updateHighScoreDisplay();
+  </script>
+</body>
+</html>
